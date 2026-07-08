@@ -63,10 +63,11 @@ func (o *Options) run() error {
 
 func (o *Options) writeResult(token, host string) error {
 	if len(token) == 0 {
-		fmt.Println(o.Streams.Out, "token doesn't exist")
-		return nil
+		return fmt.Errorf("error: returned token is empty")
 	}
-	if o.output == "json" {
+
+	switch o.output {
+	case "json":
 		err := clusteradmjson.WriteJsonOutput(o.Streams.Out, clusteradmjson.HubInfo{
 			HubToken:     token,
 			HubApiserver: host,
@@ -74,9 +75,14 @@ func (o *Options) writeResult(token, host string) error {
 		if err != nil {
 			return err
 		}
-	} else {
+	case "text":
 		fmt.Fprintf(o.Streams.Out, "token=%s\n", token)
 		fmt.Fprintf(o.Streams.Out, "please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n", helpers.GetExampleHeader(), token, host)
+	case "raw":
+		fmt.Fprint(o.Streams.Out, token)
+	default:
+		return fmt.Errorf("invalid output format: %s", o.output)
 	}
+
 	return nil
 }
